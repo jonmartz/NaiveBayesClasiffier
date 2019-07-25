@@ -83,18 +83,27 @@ class GUI:
                         return
                     else:
                         self.structure_path = root_path+'\\'+filename
+                        if os.path.getsize(self.structure_path) == 0:
+                            messagebox.showerror("Naive Bayes Classifier", "Structure.txt file is empty")
+                            return
                 elif filename == 'train.csv':
                     if self.train_path != '':
                         messagebox.showerror("Naive Bayes Classifier", "more than one train.csv in directory")
                         return
                     else:
                         self.train_path = root_path+'\\'+filename
+                        if os.path.getsize(self.train_path) == 0:
+                            messagebox.showerror("Naive Bayes Classifier", "train.csv file is empty")
+                            return
                 elif filename == 'test.csv':
                     if self.test_path != '':
                         messagebox.showerror("Naive Bayes Classifier", "more than one test.csv in directory")
                         return
                     else:
                         self.test_path = root_path+'\\'+filename
+                        if os.path.getsize(self.test_path) == 0:
+                            messagebox.showerror("Naive Bayes Classifier", "test.csv file is empty")
+                            return
 
         # check that all files were found
         if self.structure_path == '':
@@ -132,7 +141,7 @@ class GUI:
             with open(self.directory_path+'\\output.txt', 'w') as output_file:
                 for i in predictions:
                     line = str(i+1)+' '+predictions[i]
-                    print(line)
+                    # print(line)
                     output_file.write(line+'\n')
             messagebox.showinfo("Naive Bayes Classifier", "Classification completed!")
         except:
@@ -249,7 +258,7 @@ def predictTestFile(NaiveBayesModel, testDataFrame, fieldsStructure):
                 if f != 'class':
                     classVal = classVal * (float(NaiveBayesModel[0][f][row[1][f]][c] + (2/ len(fieldsStructure[f])))/float((NaiveBayesModel[1][c][1] + 2)))
             classVal = classVal * NaiveBayesModel[1][c][0]
-            if classVal > maxClassVal:
+            if classVal >= maxClassVal:
                 maxClass = c
                 maxClassVal = classVal
         predictionsDict[i] = maxClass
