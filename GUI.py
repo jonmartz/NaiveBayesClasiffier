@@ -1,8 +1,7 @@
-from tkinter import Tk, Label, Button, Entry, END, W, E, messagebox, StringVar, Canvas, NW, S, N, Listbox, MULTIPLE
-from tkinter.filedialog import askopenfilename, askdirectory
-from keras.models import load_model
-import numpy
-from scipy import ndimage, misc
+import tkinter as tk
+from tkinter import Tk, Label, Button, Entry, END, W, E, messagebox, StringVar, Canvas, NW, S, N, Listbox, MULTIPLE, \
+    DISABLED
+from tkinter.filedialog import askdirectory
 import os
 
 
@@ -10,82 +9,122 @@ class GUI:
 
     def __init__(self, master):
         self.master = master
-        master.title("Flower Classifier")
+        master.title("Naive Bayes Classifier")
+
+        # Members
+        self.structure_path = ""
+        self.train_path = ""
+        self.test_path = ""
 
         # Labels
-        self.img_path_label = Label(master, text="Path of image dir:")
-        self.model_label = Label(master, text="Path of model file:")
-        # self.flower_class_text = StringVar()
-        # self.flower_class_label = Label(master, textvariable=self.flower_class_text, font='Helvetica 14 bold')
+        self.directory_path_label = Label(master, text="Directory Path:")
+        self.discretization_bins_label = Label(master, text="Discretization Bins:")
+
+        # Vars
+        self.directory_path_text = StringVar()
+        self.directory_path_text.trace("w", lambda name, index, mode, sv=self.directory_path_text: self.check_path(sv))
 
         # Entries
-        self.img_dir_path_entry = Entry(master, width=100)
-        self.model_path_entry = Entry(master, width=100)
+        self.directory_path_entry = Entry(master, textvariable=self.directory_path_text, width=50)
+        self.discretization_bins_entry = IntEntry(master, width=10)
+        self.discretization_bins_entry.set('1')
 
         # Buttons
-        self.img_browse_button = Button(master, text="Browse...", command=lambda: self.browse_dir(self.img_dir_path_entry))
-        self.model_browse_button = Button(master, text="Browse...",
-                                          command=lambda: self.browse_file(self.model_path_entry))
-        self.predict_button = Button(master, text="Predict", command=lambda: self.predict(), width=15)
-
-        # table
-        self.listBox = Listbox(root, selectmode=MULTIPLE, width=100)  # create Listbox
+        self.browse_button = Button(master, text="Browse", command=lambda: self.browse())
+        self.build_button = Button(master, text="Build", state=DISABLED, command=lambda: self.build(), width=20)
+        self.classify_button = Button(master, text="Classify", state=DISABLED, command=lambda: self.classify(), width=20)
 
         # LAYOUT
-        self.img_path_label.grid(row=0, column=0)
-        self.img_dir_path_entry.grid(row=0, column=1)
-        self.img_browse_button.grid(row=0, column=2)
-        self.model_label.grid(row=1, column=0)
-        self.model_path_entry.grid(row=1, column=1)
-        self.model_browse_button.grid(row=1, column=2)
-        self.predict_button.grid(row=3, column=0, sticky=W + N)
-        # self.flower_class_label.grid(row=3, column=1)
-        self.listBox.grid(row=3, column=1, sticky=W)
+        self.directory_path_label.grid(row=0, column=0, padx=10, pady=10, sticky=E)
+        self.directory_path_entry.grid(row=0, column=1, padx=10, pady=10)
+        self.browse_button.grid(row=0, column=2, padx=10, pady=10)
+        self.discretization_bins_label.grid(row=1, column=0, sticky=E, padx=10, pady=10)
+        self.discretization_bins_entry.grid(row=1, column=1, sticky=W, padx=10, pady=10)
+        self.build_button.grid(row=2, column=0, columnspan=3,  padx=10, pady=10)
+        self.classify_button.grid(row=3, column=0, columnspan=3, padx=10, pady=10)
 
-    def browse_file(self, entry):
-        path = askopenfilename()
-        if path != '':
-            entry.delete(0, END)
-            entry.insert(0, path)
-
-    def browse_dir(self, entry):
+    def browse(self):
+        entry = self.directory_path_entry
         path = askdirectory()
         if path != '':
             entry.delete(0, END)
             entry.insert(0, path)
 
-    def predict(self):
-        if self.img_dir_path_entry.get() == '' or self.model_path_entry.get() == '':
-            messagebox.showerror("Error", "Please enter both paths")
+    def check_path(self, sv):
+        if sv.get() != '':
+            self.build_button['state'] = 'normal'
         else:
-            # self.flower_class_text.set(self.predict_class(model, self.img_path_entry.get()))
-            i = 0
-            self.listBox.delete(0, END)
-            model = self.load_model_from_path(self.model_path_entry.get())
-            for root_path, dirnames, filenames in os.walk(self.img_dir_path_entry.get()):
-                for filename in filenames:
-                    i += 1
-                    row = str(i)+") "+filename+" -> "+self.predict_class(model, os.path.join(root_path, filename))
-                    self.listBox.insert(END, row)
+            self.build_button['state'] = 'disabled'
+            self.classify_button['state'] = 'disabled'
 
-    def load_image(self, path):
-        image_readed = ndimage.imread(path, mode="RGB")
-        image_resized = misc.imresize(image_readed, (128, 128))
-        image = numpy.expand_dims(image_resized, axis=0)
-        return image
+    def build(self):
+        for root_path, dirnames, filenames in os.walk(self.directory_path_entry.get()):
+            for filename in filenames:
 
-    def load_model_from_path(self, model_path):
-        ans = load_model(model_path)
-        return ans
+                # check if file is required
+                if filename == 'Structure.txt':
+                    if self.structure_path != '':
+                        messagebox.showerror("Error", "more than one Structure.txt in directory")
+                        return
+                    else:
+                        self.structure_path = root_path+'\\'+filename
+                elif filename == 'train.csv':
+                    if self.train_path != '':
+                        messagebox.showerror("Error", "more than one train.csv in directory")
+                        return
+                    else:
+                        self.train_path = root_path+'\\'+filename
+                elif filename == 'test.csv':
+                    if self.test_path != '':
+                        messagebox.showerror("Error", "more than one test.csv in directory")
+                        return
+                    else:
+                        self.test_path = root_path+'\\'+filename
 
-    def predict_class(self, model, image_path):
-        answer = model.predict(self.load_image(image_path))
-        class_dictionary = {0: 'daisy', 1: 'dandelion', 2: 'rose', 3: 'sunflower', 4: 'tulip'}
-        one_idx = 0
-        for i in range(0, len(answer[0])):
-            if answer[0][i] == 1:
-                one_idx = i
-        return class_dictionary[one_idx]
+        # check that all files were found
+        if self.structure_path == '':
+            messagebox.showerror("Error", "Structure.txt not found")
+            return
+        if self.train_path == '':
+            messagebox.showerror("Error", "train.csv not found")
+            return
+        if self.test_path == '':
+            messagebox.showerror("Error", "test.csv not found")
+            return
+
+        self.build_model()
+
+    def build_model(self):
+        # todo: build naive bayes model here
+        # print('all files found\n')
+        # with open(self.structure_path, 'r') as structure:
+        #     for line in structure:
+        #         print(line)
+
+        # if the building of the model was successful
+        messagebox.showinfo("Message", "Naive bayes model built successfully!")
+        self.build_button['state'] = 'disabled'
+        self.classify_button['state'] = 'normal'
+
+
+class IntEntry(tk.Entry):
+    def __init__(self, master=None, **kwargs):
+        self.var = tk.StringVar()
+        tk.Entry.__init__(self, master, textvariable=self.var, **kwargs)
+        self.old_value = ''
+        self.var.trace('w', self.check)
+        self.get, self.set = self.var.get, self.var.set
+
+    def check(self, *args):
+        if self.get().isdigit():
+            # the current value is only digits; allow this
+            if self.get()[0] == '0':
+                self.set(self.old_value)
+            else:
+                self.old_value = self.get()
+        else:
+            # there's non-digit characters in the input; reject this
+            self.set(self.old_value)
 
 
 root = Tk()
