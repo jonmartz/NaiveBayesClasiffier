@@ -92,7 +92,11 @@ class GUI:
                         return
                     else:
                         self.train_path = root_path+'\\'+filename
-                        if os.path.getsize(self.train_path) == 0:
+                        try:
+                            if pd.read_csv(self.train_path).empty:
+                                messagebox.showerror("Naive Bayes Classifier", "train.csv file is empty")
+                                return
+                        except:
                             messagebox.showerror("Naive Bayes Classifier", "train.csv file is empty")
                             return
                 elif filename == 'test.csv':
@@ -101,7 +105,11 @@ class GUI:
                         return
                     else:
                         self.test_path = root_path+'\\'+filename
-                        if os.path.getsize(self.test_path) == 0:
+                        try:
+                            if pd.read_csv(self.test_path).empty:
+                                messagebox.showerror("Naive Bayes Classifier", "test.csv file is empty")
+                                return
+                        except:
                             messagebox.showerror("Naive Bayes Classifier", "test.csv file is empty")
                             return
 
